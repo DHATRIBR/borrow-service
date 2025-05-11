@@ -4,7 +4,8 @@ The **Borrow Service** manages book borrow and return operations. It ensures use
 ## **Features**
 1. **Allows users to borrow and return books**  
 2. **Tracks borrowed books in MySQL**  
-3. **Checks book availability via API calls to Book Service**  
+3. **Checks book availability via API calls to Book Service** 
+4. **Asynchronously communicates to notification service via producing kafka events on apt topics**
 4. **Computes `due_date` dynamically in code (14 days from borrow date)**  
 5. **Provides overdue tracking**  
 
@@ -67,7 +68,7 @@ CREATE TABLE borrowings (
 
 ### **2. Return a Book**
 **PUT** `/return`  
-**Deletes borrow record and updates Book Service to make book available**
+**Deletes borrow record and updates Book Service to make book available, also produces an event in kafka for topic book.available_reserved**
 
 #### **Request**
 ```json
@@ -130,7 +131,7 @@ GET /borrowings/123
 
 ### **4. Get Overdue Borrowings**
 **GET** `/borrowings/overdue`  
-**Finds borrow records that are overdue (past 14 days)**
+**Finds borrow records that are overdue (past 14 days) and produces an event in kafka for topic book.overdue**
 
 #### **Request**
 ```http
@@ -175,6 +176,10 @@ GET /borrowings/overdue
 **Inter-Service Communication:** Kubernetes DNS  
    - Uses `book-service.default.svc.cluster.local` for book status updates.  
    - Enables seamless communication between services within the cluster.  
+
+**Produces events to Kafka**
+   - Uses the exposed kafka endpoints to connect to kafka
+   - Sends events to topics book.available_reserved and book.overdue
 
 **Deployment:** Kubernetes (Dockerized)  
    - Runs as a **scalable deployment** with **ClusterIP** service exposure.  
