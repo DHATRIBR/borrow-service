@@ -1,0 +1,73 @@
+# Persistent Volume for MySQL
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: borrow-db-pv
+spec:
+  capacity:
+    storage: 2Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: "/mnt/data/borrow-db"
+---
+# Persistent Volume Claim for MySQL
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: borrow-db-pvc
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+# MySQL Deployment for Borrow Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: borrow-db
+spec:
+  selector:
+    matchLabels:
+      app: borrow-db
+  template:
+    metadata:
+      labels:
+        app: borrow-db
+    spec:
+      containers:
+      - name: mysql
+        image: mysql:8
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          value: rootpass
+        - name: MYSQL_DATABASE
+          value: borrow_service
+        - name: MYSQL_USER
+          value: user
+        - name: MYSQL_PASSWORD
+          value: password
+        volumeMounts:
+        - name: borrow-db-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: borrow-db-storage
+        persistentVolumeClaim:
+          claimName: borrow-db-pvc
+---
+# MySQL Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: borrow-db
+spec:
+  selector:
+    app: borrow-db
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+  type: ClusterIP

@@ -1,0 +1,53 @@
+# Borrow Service Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: borrow-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: borrow-service
+  template:
+    metadata:
+      labels:
+        app: borrow-service
+    spec:
+      containers:
+      - name: borrow-service
+        image: library/borrow-service:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8080
+        env:
+        - name: KAFKA_BROKER
+          value: "kafka-service.default.svc.cluster.local:9092"
+        - name: KAFKA_USERNAME
+          value: "your-username"
+        - name: KAFKA_PASSWORD
+          value: "your-password"
+        - name: MYSQL_USER
+          value: "user"
+        - name: MYSQL_PASSWORD
+          value: "password"
+        - name: MYSQL_HOST
+          value: "borrow-db"
+        - name: MYSQL_PORT
+          value: "3306"
+        - name: MYSQL_DB
+          value: "borrow_service"
+---
+# Borrow Service Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: borrow-service
+spec:
+  selector:
+    app: borrow-service
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
+
